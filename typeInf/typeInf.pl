@@ -1,5 +1,4 @@
 :- dynamic gvar/2.
-
 typeExp(X, int) :-
     integer(X).
 
@@ -8,6 +7,14 @@ typeExp(X, float) :-
 
 typeExp(X, bool) :-
     typeBoolExp(X).
+
+/*
+New addition
+*/
+typeExp(X, atom) :-
+    atom(X).
+    
+
 
 /* match functions by unifying with arguments 
     and infering the result
@@ -75,6 +82,14 @@ typeStatement(gvLet(Name, T, Code), unit):-
     if(condition:Boolean, trueCode: [Statements], falseCode: [Statements])
 */
 typeStatement(if(Cond, TrueB, FalseB), T) :-
+    typeBoolExp(Cond),
+    typeCode(TrueB, T),
+    typeCode(FalseB, T).
+
+/* for statements are encodes as:
+    for(condition:Boolean, trueCode: [Statements], falseCode: [Statements])
+*/
+typeStatement(for(Cond, TrueB, FalseB), T) :-
     typeBoolExp(Cond),
     typeCode(TrueB, T),
     typeCode(FalseB, T).

@@ -17,7 +17,50 @@ test(typeExp_iplus_F, [fail]) :-
     typeExp(iplus(int, int), float).
 
 test(typeExp_iplus_T, [true(T == int)]) :-
-    typeExp(iplus(int, int), T).
+typeExp(iplus(int, int), T).
+
+% tests for typeExp
+test(typeExp_fplus) :- 
+    typeExp(fplus(float,float), float).
+
+% this test should fail
+test(typeExp_fplus_F, [fail]) :-
+    typeExp(fplus(float, float), int).
+
+test(typeExp_fplus_T, [true(T == float)]) :-
+typeExp(fplus(float, float), T).
+
+% tests for typeExp
+test(typeExp_fToInt) :- 
+typeExp(fToInt(float), int).
+
+% tests for typeExp
+test(typeExp_iToFloat) :- 
+typeExp(iToFloat(int), float).
+
+
+
+% NEW :- tests for typeExp_types
+%typeExp(X, int) :- integer(X).
+
+test(typeExp_Integer) :- 
+    typeExp(5, int).
+
+test(typeExp_Integer_F, [fail]) :- 
+    typeExp(15.9, int).
+
+test(typeExp_Float) :- 
+    typeExp(9.5, float).
+
+test(typeExp_Float_F, [fail]) :- 
+    typeExp(19, float).
+
+test(typeExp_Bool) :- 
+    typeExp(9<5, bool).
+
+test(typeExp_Bool_S, [fail]) :- 
+    typeExp(true, float).
+
 
 % NOTE: use nondet as option to test if the test is nondeterministic
 
@@ -27,6 +70,14 @@ test(typeStatement_gvar, [nondet, true(T == int)]) :- % should succeed with T=in
     typeStatement(gvLet(v, T, iplus(X, Y)), unit),
     assertion(X == int), assertion( Y == int), % make sure the types are int
     gvar(v, int). % make sure the global variable is defined
+
+% test for statement with state cleaning
+test(typeStatement_gvar, [nondet, true(T == float)]) :- % should succeed with T=int
+    deleteGVars(), /* clean up variables */
+    typeStatement(gvLet(v, T, ), unit),
+    assertion(X == int), assertion( Y == int), % make sure the types are int
+    gvar(v, int). % make sure the global variable is defined
+
 
 % same test as above but with infer 
 test(infer_gvar, [nondet]) :-
@@ -41,9 +92,16 @@ test(mockedFct, [nondet]) :-
     typeExp(my_fct(X), T), % infer type of expression using or function
     assertion(X==int), assertion(T==float). % make sure the types infered are correct
 
+% haskell int ->int ->int
+% ifstatement ;=> Cond -> trueB -> falseB ->Resultt
+
 test(simple_if, [nondet]) :-
     typeStatement( if(true, [3], [4]), T),
     assertion(T==int).
+
+% test(simple_if, [nondet]) :-
+%     typeStatement( if(44.1 < 44.2, [33.3], [19.2]), T),
+%     assertion(T==float).
 
 
 :-end_tests(typeInf).
