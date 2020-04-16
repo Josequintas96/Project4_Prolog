@@ -8,13 +8,14 @@ typeExp(X, float) :-
 typeExp(X, bool) :-
     typeBoolExp(X).
 
+typeExp(X, real) :-
+    number(X).
+
 /*
 New addition
 */
 typeExp(X, atom) :-
     atom(X).
-    
-
 
 /* match functions by unifying with arguments 
     and infering the result
@@ -39,9 +40,18 @@ typeExpList([Hin|Tin], [Hout|Tout]):-
     typeExp(Hin, Hout), /* type infer the head */
     typeExpList(Tin, Tout). /* recurse */
 
+
+/*New addition */
+is_a_number(X):- 
+    typeExp(X, int).
+is_a_number(X):- 
+    typeExp(X, float).
+
+
 hasComparison(int).
 hasComparison(float).
 hasComparison(string).
+hasComparison(bool).
 
 hasAdd(int).
 hasAdd(float).
@@ -61,6 +71,15 @@ typeBoolExp( X >= Y) :-
     typeExp(X, T),
     typeExp(Y, T),
     hasComparison(T).
+% typeBoolExp( X && Y) :- 
+%     typeExp(X, T),
+%     typeExp(Y, T),
+%     hasComparison(T).
+% typeBoolExp( X || Y) :- 
+% typeBoolExp( X || Y) :- 
+%     typeExp(X, T),
+%     typeExp(Y, T),
+%     hasComparison(T).        
 
 
 /* TODO: add statements types and their type checking */
@@ -78,6 +97,20 @@ typeStatement(gvLet(Name, T, Code), unit):-
     bType(T), /* make sure we have an infered type */
     asserta(gvar(Name, T)). /* add definition to database */
 
+
+
+% b. global function definitions (let add x y = x+y)
+% last expression is an implicit return. return statement also possible  
+
+typeStatement(gvLet_Add(Name, Y , Z, T, T2, Code), T):-
+    atom(Name), /* make sure we have a bound name */
+    typeExp(Z, T),
+    typeExp(Y, T), /* infer the type of Code and ensure it is T */
+    bType(T), /* make sure we have an infered type */
+    asserta(gvar(Name, T)). /* add definition to database */
+
+
+
 /* if statements are encodes as:
     if(condition:Boolean, trueCode: [Statements], falseCode: [Statements])
 */
@@ -87,12 +120,50 @@ typeStatement(if(Cond, TrueB, FalseB), T) :-
     typeCode(FalseB, T).
 
 /* for statements are encodes as:
-    for(condition:Boolean, trueCode: [Statements], falseCode: [Statements])
+    for(variable: int, condition:Boolean, expression:variable:int -> variable:int, [Statments])
+    https://discretemathisfun.wordpress.com/2009/12/07/looping-using-prolog/
 */
-typeStatement(for(Cond, TrueB, FalseB), T) :-
-    typeBoolExp(Cond),
-    typeCode(TrueB, T),
-    typeCode(FalseB, T).
+% typeStatement(for(Name, Type, V, Cond, Exp, Statements ), T) :-
+%     typeStatement(gvLet(Name, Type, Code)),
+%     typeBoolExp(Cond),
+%     typeCode(Exp),
+%     typeCode(Statemetns, T).
+
+
+/* Switch statements are encodes as:
+    Switch(choice:[case])
+    OR
+    Switch(choice, case1, case2, case 3)
+
+    Choice is option looking for
+    case=> two parts, 
+*/
+% typeStatement(switch(Choice, X), T) :-
+%     hasComparison(Choice),
+%     integer(X).
+    
+typeStatement(cos(X), T) :-
+    is_a_number(X),
+    typeExp(X, T),
+    is_a_number(T).
+    % typeExp(T, int).
+
+    
+    
+typeStatement(sin(X), T) :-
+   is_a_number(X),
+   typeExp(X, T),
+   is_a_number(T).
+
+typeStatement(sqrt(X), T) :-
+    is_a_number(X),
+    typeExp(X, T),
+    typeExp(T, real).
+%typeStatement(sqrt(X), T) :-
+ %   is_a_number(X),
+  %  typeExp(X, T),
+   % typeExp(T, float).
+
 
 /* Code is simply a list of statements. The type is 
     the type of the last statement 
@@ -115,6 +186,7 @@ bType(int).
 bType(float).
 bType(string).
 bType(bool).
+bType(real).
 bType(unit). /* unit type for things that are not expressions */
 /*  functions type.
     The type is a list, the last element is the return type
@@ -157,10 +229,20 @@ iplus :: int -> int -> int
 
 fType(iplus, [int,int,int]).
 fType((+), [T, T, T]) :- hasAdd(T).
+fType(iminus, [int,int,int]).
+fType((-), [T, T, T]) :- hasAdd(T).
+
 fType(fplus, [float, float, float]).
+fType(fminus, [float, float, float]).
+
 fType(fToInt, [float,int]).
 fType(iToFloat, [int,float]).
-fType(print, [_X, unit]). /* simple print */
+fType(print, [_X, unit]). /* simple print */ %????
+
+fType(cos, [T,T]) :- hasAdd(T).
+fType(sin, [T,T]) :- hasAdd(T).
+fType(sqrt, [T,T]) :- hasAdd(T).
+
 
 /* Find function signature
    A function is either buld in using fType or

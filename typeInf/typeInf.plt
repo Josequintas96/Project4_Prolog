@@ -99,9 +99,31 @@ test(simple_if, [nondet]) :-
     typeStatement( if(true, [3], [4]), T),
     assertion(T==int).
 
-% test(simple_if, [nondet]) :-
-%     typeStatement( if(44.1 < 44.2, [33.3], [19.2]), T),
-%     assertion(T==float).
+test(simple_if, [nondet]) :-
+    typeStatement( if(44.1 < 44.2, [hello], [bye]), T),
+    assertion(T==atom).
 
+test(simple_if, [nondet] [fail]) :-
+    typeStatement( if(44.1 >= 44.2, [44.4], [55.5]), T),
+    assertion(T==atom).
+
+
+%conditional test
+% typeStatement(cos(X), T) :- is_a_number(X), typeExp(X, T), is_a_number(T).
+test(simple_cos_I, [nondet]) :-
+    typeStatement( cos(99), T),
+    assertion(T==int).
+
+test(simple_cos_I_F, [nondet], [fail]) :-
+    typeStatement( cos(91.4), T),
+    assertion(T==int).
+
+test(simple_sin, [nondet]) :-
+    typeStatement( sin(0.1), T),
+    assertion(T==float).
+
+test(simple_sin_F_F, [nondet], [fail]) :-
+    typeStatement( sin(91), T),
+    assertion(T==float).
 
 :-end_tests(typeInf).
