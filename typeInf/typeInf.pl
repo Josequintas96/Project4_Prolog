@@ -42,8 +42,7 @@ typeExpList([Hin|Tin], [Hout|Tout]):-
 
 
 /*New addition */
-is_a_number(X):- 
-    typeExp(X, int).
+
 is_a_number(X):- 
     typeExp(X, float).
 
@@ -102,12 +101,12 @@ typeStatement(gvLet(Name, T, Code), unit):-
 % b. global function definitions (let add x y = x+y)
 % last expression is an implicit return. return statement also possible  
 
-typeStatement(gvLet_Add(Name, Y , Z, T, T2, Code), T):-
-    atom(Name), /* make sure we have a bound name */
-    typeExp(Z, T),
-    typeExp(Y, T), /* infer the type of Code and ensure it is T */
-    bType(T), /* make sure we have an infered type */
-    asserta(gvar(Name, T)). /* add definition to database */
+% typeStatement(def(Name, Y , Z, T, T2, Code), T):-
+%     atom(Name), /* make sure we have a bound name */
+%     typeExp(Z, T),
+%     typeExp(Y, T), /* infer the type of Code and ensure it is T */
+%     bType(T), /* make sure we have an infered type */
+%     asserta(gvar(Name, T)). /* add definition to database */
 
 
 
@@ -141,28 +140,8 @@ typeStatement(if(Cond, TrueB, FalseB), T) :-
 % typeStatement(switch(Choice, X), T) :-
 %     hasComparison(Choice),
 %     integer(X).
-    
-typeStatement(cos(X), T) :-
-    is_a_number(X),
-    typeExp(X, T),
-    is_a_number(T).
-    % typeExp(T, int).
 
-    
-    
-typeStatement(sin(X), T) :-
-   is_a_number(X),
-   typeExp(X, T),
-   is_a_number(T).
 
-typeStatement(sqrt(X), T) :-
-    is_a_number(X),
-    typeExp(X, T),
-    typeExp(T, real).
-%typeStatement(sqrt(X), T) :-
- %   is_a_number(X),
-  %  typeExp(X, T),
-   % typeExp(T, float).
 
 
 /* Code is simply a list of statements. The type is 
