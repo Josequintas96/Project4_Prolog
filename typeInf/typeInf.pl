@@ -231,6 +231,8 @@ fType(iplus, [int,int,int]).
 fType((+), [T, T, T]) :- hasAdd(T).
 fType(iminus, [int,int,int]).
 fType((-), [T, T, T]) :- hasAdd(T).
+fType(imultiply, [int,int,float]).
+fType((*), [T, T, T]) :- hasAdd(T).
 
 fType(fplus, [float, float, float]).
 fType(fminus, [float, float, float]).

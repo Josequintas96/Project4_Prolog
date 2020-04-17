@@ -9,6 +9,7 @@
 */
 
 % tests for typeExp
+&iplus
 test(typeExp_iplus) :- 
     typeExp(iplus(int,int), int).
 
@@ -19,7 +20,29 @@ test(typeExp_iplus_F, [fail]) :-
 test(typeExp_iplus_T, [true(T == int)]) :-
 typeExp(iplus(int, int), T).
 
-% tests for typeExp
+&iminus
+test(typeExp_iminus) :- 
+    typeExp(iminus(int,int), int).
+
+% this test should fail
+test(typeExp_iminus_F, [fail]) :-
+    typeExp(iminus(int, int), float).
+
+test(typeExp_iminus_T, [true(T == int)]) :-
+typeExp(iminus(int, int), T).
+
+&imultiply
+test(typeExp_imultiply) :- 
+    typeExp(imultiply(int,int), int).
+
+% this test should fail
+test(typeExp_imultiply_F, [pass]) :-
+    typeExp(imultiply(int, int), float).
+
+test(typeExp_imultiply_T, [true(T == float)]) :-
+typeExp(imultiply(int, int), T).
+
+%fplus
 test(typeExp_fplus) :- 
     typeExp(fplus(float,float), float).
 
