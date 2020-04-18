@@ -18,6 +18,13 @@ New addition
 */
 typeExp(X, atom) :-
     atom(X).
+/*
+Jose addition
+*/
+typeExp((X, [A1, A2])) :-
+    typeExp(X, atom),
+    typeExp(A1, atom),
+    typeExp(A2, atom).
 
 /* match functions by unifying with arguments 
     and infering the result
@@ -31,6 +38,7 @@ typeExp(Fct, T):-
     append(Args, [T], FType), /* make it loook like a function signature */
     functionType(Fname, TArgs), /* get type of arguments from definition */
     typeExpList(FType, TArgs). /* recurisvely match types */
+
 
 
 /* propagate types */
@@ -74,18 +82,18 @@ typeBoolExp( X >= Y) :-
     typeExp(X, T),
     typeExp(Y, T),
     hasComparison(T).
-% typeBoolExp( X == Y) :- 
+typeBoolExp( X == Y) :- 
+    typeExp(X, T),
+    typeExp(Y, T),
+    hasComparison(T).
+%typeBoolExp( X & Y) :- 
 %    typeExp(X, T),
 %    typeExp(Y, T),
 %    hasComparison(T).
-% typeBoolExp( X && Y) :- 
-%    typeExp(X, T),
-%    typeExp(Y, T),
-%    hasComparison(T).
-% typeBoolExp( X || Y) :- 
-%    typeExp(X, T),
-%    typeExp(Y, T),
-%   hasComparison(T).        
+%typeBoolExp( X | Y) :- 
+ %   typeExp(X, T),
+ %   typeExp(Y, T),
+ %   hasComparison(T).        
 
 
 /* TODO: add statements types and their type checking */
@@ -109,14 +117,16 @@ typeStatement(gvLet(Name, T, Code), unit):-
 % gvlet posses a name, argumentts (probably same type), a function itself (which probably has oen arguments)
     %   where name is an atom
     % 
-% typeStatement(def(Name, [Ar1, Ar2], T, Code), unit):- %code is X+Y
-%     atom(Name), /* make sure we have a bound name */
-%     typeExp(Ar1, Z),
-%     typeExp(Ar2, Z),
-%     typeExp(Ar1, Ar2),
-%     typeExp(Code, T),
-%     bType(T), /* make sure we have an infered type */
-%     asserta(gvar(Name, T)). /* add definition to database */
+
+    % typeStatement(def((beta, [Ar1, Ar2]), T, X+Z), unit).
+
+typeStatement(def((Name, [Ar1, Ar2]), T, Code), unit):- %code is X+Y
+    atom(Name), /* make sure we have a bound name */
+    % typeExp(Ar2, Z),
+    % typeExp(Ar1, Ar2),
+    typeExp(Code, T),
+    bType(T), /* make sure we have an infered type */
+    asserta(gdef(Name, T)). /* add definition to database */
 
 
 

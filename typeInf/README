@@ -35,8 +35,8 @@ a more complete coverage of OCAml type inference. Specifically:
     d. if statements
          //Done__
     e. "let in" statement for local variables
-    f. for statements
-    g. code blocks (separated by ;)
+        f. "for" statements in OCaml OR "where" statements in Haskell
+    g. code blocks (sets of statements that can be run together and return the type of the last statement)
 3. Write tests for all predicates especially infer (at least 20 cases).
 
 You need to find your own representation of OCaml code to implement the 
