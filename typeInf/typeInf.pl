@@ -1,4 +1,6 @@
 :- dynamic gvar/2.
+:- dynamic gdef/2.
+
 typeExp(X, int) :-
     integer(X).
 
@@ -55,6 +57,8 @@ hasComparison(bool).
 hasAdd(int).
 hasAdd(float).
 
+hasfloat(float).
+
 /* predicate to infer types for boolean expressions */
 typeBoolExp(true).
 typeBoolExp(false). 
@@ -70,15 +74,18 @@ typeBoolExp( X >= Y) :-
     typeExp(X, T),
     typeExp(Y, T),
     hasComparison(T).
+% typeBoolExp( X == Y) :- 
+%    typeExp(X, T),
+%    typeExp(Y, T),
+%    hasComparison(T).
 % typeBoolExp( X && Y) :- 
-%     typeExp(X, T),
-%     typeExp(Y, T),
-%     hasComparison(T).
+%    typeExp(X, T),
+%    typeExp(Y, T),
+%    hasComparison(T).
 % typeBoolExp( X || Y) :- 
-% typeBoolExp( X || Y) :- 
-%     typeExp(X, T),
-%     typeExp(Y, T),
-%     hasComparison(T).        
+%    typeExp(X, T),
+%    typeExp(Y, T),
+%   hasComparison(T).        
 
 
 /* TODO: add statements types and their type checking */
@@ -97,14 +104,17 @@ typeStatement(gvLet(Name, T, Code), unit):-
     asserta(gvar(Name, T)). /* add definition to database */
 
 
-
 % b. global function definitions (let add x y = x+y)
 % last expression is an implicit return. return statement also possible  
-
-% typeStatement(def(Name, Y , Z, T, T2, Code), T):-
+% gvlet posses a name, argumentts (probably same type), a function itself (which probably has oen arguments)
+    %   where name is an atom
+    % 
+% typeStatement(def(Name, [Ar1, Ar2], T, Code), unit):- %code is X+Y
 %     atom(Name), /* make sure we have a bound name */
-%     typeExp(Z, T),
-%     typeExp(Y, T), /* infer the type of Code and ensure it is T */
+%     typeExp(Ar1, Z),
+%     typeExp(Ar2, Z),
+%     typeExp(Ar1, Ar2),
+%     typeExp(Code, T),
 %     bType(T), /* make sure we have an infered type */
 %     asserta(gvar(Name, T)). /* add definition to database */
 
@@ -205,24 +215,34 @@ deleteGVars():-retractall(gvar), asserta(gvar(_X,_Y):-false()).
 iplus :: int -> int -> int
 
 */
+fType((+), [T, T, T]) :- hasAdd(T).
+
+
+
+fType((-), [T, T, T]) :- hasAdd(T).
+fType((*), [T, T, T]) :- hasAdd(T).
+fType((\/), [T, T, T]) :- hasAdd(T).
 
 fType(iplus, [int,int,int]).
-fType((+), [T, T, T]) :- hasAdd(T).
-fType(iminus, [int,int,int]).
-fType((-), [T, T, T]) :- hasAdd(T).
-fType(imultiply, [int,int,float]).
-fType((*), [T, T, T]) :- hasAdd(T).
-
 fType(fplus, [float, float, float]).
+
+fType(iminus, [int,int,int]).
 fType(fminus, [float, float, float]).
+fType(fmultiply, [float,float,float]).
+fType(fdivide, [float,float,float]).
+
+
+
 
 fType(fToInt, [float,int]).
 fType(iToFloat, [int,float]).
 fType(print, [_X, unit]). /* simple print */ %????
 
-fType(cos, [T,T]) :- hasAdd(T).
-fType(sin, [T,T]) :- hasAdd(T).
-fType(sqrt, [T,T]) :- hasAdd(T).
+
+fType(cos, [T,T]) :- hasfloat(T).
+% ftype cos has a list T where T is float
+fType(sin, [T,T]) :- hasfloat(T).
+fType(sqrt, [T,T]) :- hasfloat(T).
 
 
 /* Find function signature
