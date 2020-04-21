@@ -1,4 +1,5 @@
 :- dynamic gvar/2.
+:- dynamic gdef/2.
 
 typeExp(X, int) :-
     integer(X).
@@ -9,20 +10,18 @@ typeExp(X, float) :-
 typeExp(X, bool) :-
     typeBoolExp(X).
 
-typeExp(X, real) :-
-    number(X).
-
 /*
 New addition
 */
 typeExp(X, atom) :-
     atom(X).
-
-typeExp((X, [A1, A2])) :-
+/*
+Jose addition
+*/
+typeExp((X, [A1, A2]),atom) :-
     typeExp(X, atom),
     typeExp(A1, atom),
     typeExp(A2, atom).
-% typeExp of a definition with argument, it is a typeExpr if X is a atom
 
 /* match functions by unifying with arguments 
     and infering the result
@@ -33,9 +32,10 @@ typeExp(Fct, T):-
     functor(Fct, Fname, _Nargs), /* ensure we have a functor */
     !, /* if we make it here we do not try anything else */
     Fct =.. [Fname|Args], /* get list of arguments */
-    append(Args, [T], FType), /* make it loook like a function signature */
-    functionType(Fname, TArgs), /* get type of arguments from definition */
-    typeExpList(FType, TArgs). /* recurisvely match types */
+    typeExpList(Args, ArgsT),
+    append(ArgsT, [T], FType), /* make it loook like a function signature */
+    functionType(Fname, FType). /* get type of arguments from definition */
+
 
 
 /* propagate types */
@@ -50,8 +50,10 @@ typeExpList([Hin|Tin], [Hout|Tout]):-
 
 /*New addition */
 
-is_a_number(X):- 
-    typeExp(X, float).
+argument(L):- 
+    is_list(L),
+    length(L,X),
+    maplist(atomic, L).
 
 
 hasComparison(int).
@@ -64,33 +66,15 @@ hasAdd(float).
 
 hasfloat(float).
 
-/* predicate to infer types for boolean expressions */
-typeBoolExp(true).
-typeBoolExp(false). 
-typeBoolExp( X < Y) :- 
-    typeExp(X, T),
-    typeExp(Y, T),
-    hasComparison(T).
-typeBoolExp( X > Y) :- 
-    typeExp(X, T),
-    typeExp(Y, T),
-    hasComparison(T).
-typeBoolExp( X >= Y) :- 
-    typeExp(X, T),
-    typeExp(Y, T),
-    hasComparison(T).
-% typeBoolExp( X == Y) :- 
+
+%typeBoolExp( X & Y) :- 
 %    typeExp(X, T),
 %    typeExp(Y, T),
 %    hasComparison(T).
-% typeBoolExp( X && Y) :- 
-%    typeExp(X, T),
-%    typeExp(Y, T),
-%    hasComparison(T).
-% typeBoolExp( X || Y) :- 
-%    typeExp(X, T),
-%    typeExp(Y, T),
-%   hasComparison(T).        
+%typeBoolExp( X | Y) :- 
+ %   typeExp(X, T),
+ %   typeExp(Y, T),
+ %   hasComparison(T).        
 
 
 /* TODO: add statements types and their type checking */
@@ -102,7 +86,7 @@ typeStatement(X, T) :-
     Example:
         gvLet(v, T, int) ~ let v = 3;
  */
-typeStatement(gvLet(Name, T, Code), unit):-
+typeStatement(gvLet((Name, Code),T), unit):-
     atom(Name), /* make sure we have a bound name */
     typeExp(Code, T), /* infer the type of Code and ensure it is T */
     bType(T), /* make sure we have an infered type */
@@ -113,17 +97,16 @@ typeStatement(gvLet(Name, T, Code), unit):-
 % last expression is an implicit return. return statement also possible  
 % gvlet posses a name, argumentts (probably same type), a function itself (which probably has oen arguments)
     %   where name is an atom
-    %           arguments should be string
+    % 
 
-    %  typeStatement(def((v, [arg1,arg2]), T, X+Y), unit).
+    % typeStatement(def((beta, [Ar1, Ar2]), T, X+Z), unit).
 
-typeStatement(def((Name, [Ar1, Ar2]), T, Code), unit):- %code is X+Y
-    atom(Name), /* make sure we have a bound name */
-    % typeExp(Ar2, Z),
-    % typeExp(Ar1, Ar2),
+typeStatement(def(((Name,List), Code) ,T), unit):- %code is X+Y
+    atom(Name),
+    argument(List), /* make sure we have a list */
     typeExp(Code, T),
     bType(T), /* make sure we have an infered type */
-    asserta(gvar(Name, T)). /* add definition to database */
+    asserta(gdef(Name, T)). /* add definition to database */
 
 
 
@@ -182,7 +165,6 @@ bType(int).
 bType(float).
 bType(string).
 bType(bool).
-bType(real).
 bType(unit). /* unit type for things that are not expressions */
 /*  functions type.
     The type is a list, the last element is the return type
@@ -191,6 +173,27 @@ bType(unit). /* unit type for things that are not expressions */
  */
 bType([H]):- bType(H).
 bType([H|T]):- bType(H), bType(T).
+
+
+/* predicate to infer types for boolean expressions */
+typeBoolExp(true).
+typeBoolExp(false). 
+typeBoolExp( X < Y) :- 
+    typeExp(X, T),
+    typeExp(Y, T),
+    hasComparison(T).
+typeBoolExp( X > Y) :- 
+    typeExp(X, T),
+    typeExp(Y, T),
+    hasComparison(T).
+typeBoolExp( X >= Y) :- 
+    typeExp(X, T),
+    typeExp(Y, T),
+    hasComparison(T).
+typeBoolExp( X == Y) :- 
+    typeExp(X, T),
+    typeExp(Y, T),
+    hasComparison(T).
 
 /*
     TODO: as you encounter global variable definitions
@@ -237,8 +240,6 @@ fType(iminus, [int,int,int]).
 fType(fminus, [float, float, float]).
 fType(fmultiply, [float,float,float]).
 fType(fdivide, [float,float,float]).
-
-
 
 
 fType(fToInt, [float,int]).
