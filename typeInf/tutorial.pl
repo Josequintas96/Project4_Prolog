@@ -1,6 +1,13 @@
 :- dynamic person/2.
 :- dynamic family/2. 
 
+available(X, male):-
+    free(X).
+available(X, female):-
+    free(X).
+
+
+
 sex(male).
 sex(female).
 
@@ -21,6 +28,9 @@ is_family(L):-is_list(L).
 % On case of marriage, X must be perrson 1 family, Y must be person 2 family, combine resuulut in new family of name V
 marriage(X,Y,V) :- atom(V), is_family(X), is_family(Y), X \== Y, append(X,Y,Z), asserta(family(V,Z)).
 
+age(X):-integer(X).
+
+birth(T,T,T) :- age(T).
 
 is_person(X,Y) :- atom(X), sex(Y), asserta(person(X,Y)).
 
@@ -66,13 +76,11 @@ parent(vanessa, laura).
 % the parents of X  are Y and Z
 parents(X,Y,Z) :- parent(X,Y), parent(X,Z), Z \== Y.
 
-% grandparent
+% grandparent of X must be the parant of the parent of actual X
 grandparent(X,Y) :- parent(X, Z), parent(Z,Y).
 
 % X and Y are brother or sister if PARENT OF X ARE SAME AS PARENT OF Y
 sister_brother(X,Y) :- parent(X, Z), parent(Y, Z), format('the parent is ~w', [Z]).
-
-
 
 
 

@@ -24,7 +24,7 @@ typeExp(iplus(int, int), T).
 test(typeExp_iminus) :- 
     typeExp(iminus(int,int), int).
 test(typeExp_iminus) :- 
-    typeExp(iminus(20,18), 2).
+    typeExp(iminus(20,18), int).
 
 % this test should fail
 test(typeExp_iminus_F, [fail]) :-
@@ -33,39 +33,8 @@ test(typeExp_iminus_F, [fail]) :-
 test(typeExp_iminus_T, [true(T == int)]) :-
 typeExp(iminus(int, int), T).
 
-% & imultiply
-%test(typeExp_imultiply) :- 
-%    typeExp(imultiply(int,int), float).
 
-% this test should fail
-%test(typeExp_imultiply_F, [fail]) :-
-%    typeExp(imultiply(int, int), int).
 
-%test(typeExp_imultiply_T, [true(T == float)]) :-
-%typeExp(imultiply(int, int), T).
-
-% idivide
-%test(typeExp_idivide) :- 
-%    typeExp(idivide(int,int), float).
-
-% this test should fail
-%test(typeExp_idivide_F, [fail]) :-
-%    typeExp(idivide(int, int), int).
-
-% test(typeExp_idivide_T, [true(T == float)]) :-
-% typeExp(idivide(int, int), T).
-
-% ilessthan
-% test(typeExp_ilessthan) :- 
-%    typeExp(ilessthan(int,int), bool).
-
-% this test should fail
-%test(typeExp_ilessthan_F, [fail]) :-
-%    typeExp(ilessthan(int, int), int).
-
-% this test should fail
-%test(typeExp_ilessthan_F, [fail]) :-
-%    typeExp(ilessthan(int, int), float).
 
 % fplus
 test(typeExp_fplus) :- 
@@ -151,6 +120,35 @@ test(typeStatement_gvar, [nondet, true(T == int)]) :-
     typeStatement(gvLet(v, T, 9+9), unit),
     gvar(v, int). 
 
+test(typeStatement_operation1, [nondet, true(T == float)]) :- 
+    deleteGVars(), 
+    typeStatement(gvLet(v, T, 9.1+9.2), unit),
+    gvar(v, int). 
+
+test(typeStatement_operation2, [nondet, true(T == bool)]) :- 
+    deleteGVars(), 
+    typeStatement(gvLet(v, T, true), unit),
+    gvar(v, bool). 
+
+test(typeStatement_operation3, [nondet, true(T == bool)]) :- 
+    deleteGVars(), 
+    typeStatement(gvLet(v, T, 5==5), unit),
+    gvar(v, bool). 
+    
+test(typeStatement_operation4, [nondet, true(T == float)]) :- 
+    deleteGVars(),
+    typeStatement(if(>(float,float), [fmultiply(float,float)], [fminus(float, float)]),T).
+
+test(typeStatement_variable, [nondet, true(T2 == float)]) :- 
+    deleteGVars(), 
+    typeStatement(gvLet(v0, T, 9.1+10.0), unit),
+    typeStatement(gvLet(v, T2, v0), unit),
+    gvar(v, float). 
+    
+test(typeStatement_variable, [nondet, true(T2 == float)]) :- 
+    deleteGVars(), 
+    typeStatement(gfunc(name, [x, y, z], T, 2+2), unit).,
+    gvar(name,[x, y, z]). 
 
 % same test as above but with infer 
 test(infer_gvar, [nondet]) :-
@@ -165,6 +163,11 @@ test(mockedFct, [nondet]) :-
     typeExp(my_fct(X), T), % infer type of expression using or function
     assertion(X==int), assertion(T==float). % make sure the types infered are correct
 
+
+
+% typeStatement([(gvLet(a0, T, a1),unit)],where([(l_Let_in(a0, T, 2+2),unit)]), unit).
+
+
 % haskell int ->int ->int
 % ifstatement ;=> Cond -> trueB -> falseB ->Resultt
 
@@ -173,8 +176,10 @@ test(simple_if, [nondet]) :-
     assertion(T==int).
 
 test(simple_if, [nondet]) :-
+    typeStatement(gvLet(hello, T, 2+2),unit),
+    typeStatement(gvLet(bye, T, 2+2),unit),
     typeStatement( if(44.1 < 44.2, [hello], [bye]), T),
-    assertion(T==atom).
+    assertion(T==int).
 
 test(simple_if, [nondet], [fail]) :-
     typeStatement( if(44.1 >= 44.2, [44.4], [55.5]), T),
@@ -183,9 +188,10 @@ test(simple_if, [nondet], [fail]) :-
 
 %conditional test
 % typeStatement(cos(X), T) :- is_a_number(X), typeExp(X, T), is_a_number(T).
-%test(simple_cos_I, [nondet]) :-
-%    typeStatement( cos(99), T),
-%    assertion(T==int).
+test(simple_cos_I, [nondet]) :-
+   typeStatement( cos(99.1), T),
+   assertion(T==float).
+
 
 test(simple_cos_I_F, [nondet]) :-
    typeStatement( cos(91.4), T),
@@ -197,5 +203,49 @@ test(simple_sin, [nondet]) :-
 
 test(simple_sin_F_F, [nondet], [fail]) :-
     typeStatement( sin(91), T).
+
+test(global_do, [nondet]) :-
+    typeStatement(do([ gvLet(c, T, iminus(3, 2)), gvLet(v, T2, iplus(8, 4))],T1), unit),
+    assertion(T1==unit), assertion(T2 == int), assertion(T == int).
+
+test(extend_do, [nondet]) :-
+    typeCode([ gvLet(c, T, fminus(3.1, 2.1)), (2+2), gvLet(c, T2, iminus(3, 9990)), (2<2)], T3),
+    assertion(T3==bool),assertion(T==float), assertion(T2==int).
+
+test(simple_CODE, [nondet]) :-
+    typeCode([ gvLet(c, T, fminus(3.1, 2.1)), (2+2)], T3),
+    assertion(T3==int).
+
+
+test(global_CODE, [nondet]) :-
+    typeCode([ gvLet(c, T, fminus(3.1, 2.1))], T3),
+    assertion(T3==unit).
+
+test(extend_CODE, [nondet]) :-
+    typeCode([ gvLet(c, T, fminus(3.1, 2.1)), (2+2), gvLet(c, T2, iminus(3, 9990)), (2<2)], T3),
+    assertion(T3==bool),assertion(T==float), assertion(T2==int).
+
+
+test(infer_1, [nondet]) :-
+    infer([
+    if(>(float,float), [iplus(int,int)], [iminus(int,int)])], Ret),
+    assertion(Ret==int).
+
+
+%expressions as statements
+test(exprStat, [nondet]) :-
+    infer([
+        int,
+        float,
+        bool
+        ], Ret),
+        assertion(Ret==bool).
+        
+ %test if statements
+test(ifStat, [nondet]) :-
+    infer([
+        if(>(float,float), [iplus(int,int)], [iminus(int,int)])
+        ], Ret),
+        assertion(Ret==int).
 
 :-end_tests(typeInf).

@@ -1,4 +1,9 @@
+% typeStatement(gvLet(atom, T, iplus(X,T)), unit).
+%  typeStatement(gvLet(atom, T, 2.1+2.1), unit).
+% typeStatement(gvLet(atom, T, 2+2), unit).
+
 :- dynamic gvar/2.
+:- dynamic lvar/2.
 
 typeExp(X, int) :-
     integer(X).
@@ -9,21 +14,15 @@ typeExp(X, float) :-
 typeExp(X, bool) :-
     typeBoolExp(X).
 
-typeExp(X, real) :-
-    number(X).
+typeExp(X, T) :-
+    atom(X),
+    lvar(X,T). 
+typeExp(X, T) :-
+    atom(X),
+    gvar(X,T).
 
-/*
-New addition
-*/
-typeExp(X, atom) :-
-    atom(X).
-
-typeExp((X, [A1, A2])) :-
-    typeExp(X, atom),
-    typeExp(A1, atom),
-    typeExp(A2, atom).
-% typeExp of a definition with argument, it is a typeExpr if X is a atom
-
+% typeExpr([X], [T]):-
+%     typeExpList([X],[T]).
 /* match functions by unifying with arguments 
     and infering the result
 */
@@ -33,9 +32,9 @@ typeExp(Fct, T):-
     functor(Fct, Fname, _Nargs), /* ensure we have a functor */
     !, /* if we make it here we do not try anything else */
     Fct =.. [Fname|Args], /* get list of arguments */
-    append(Args, [T], FType), /* make it loook like a function signature */
-    functionType(Fname, TArgs), /* get type of arguments from definition */
-    typeExpList(FType, TArgs). /* recurisvely match types */
+    typeExpList(Args, ArgsT),
+    append(ArgsT, [T], FType), /* make it loook like a function signature */
+    functionType(Fname, FType). /* get type of arguments from definition */
 
 
 /* propagate types */
@@ -47,13 +46,6 @@ typeExpList([Hin|Tin], [Hout|Tout]):-
     typeExp(Hin, Hout), /* type infer the head */
     typeExpList(Tin, Tout). /* recurse */
 
-
-/*New addition */
-
-is_a_number(X):- 
-    typeExp(X, float).
-
-
 hasComparison(int).
 hasComparison(float).
 hasComparison(string).
@@ -64,33 +56,33 @@ hasAdd(float).
 
 hasfloat(float).
 
+parameter(L):-
+    is_list(L),
+    maplist(atomic, L).
+
 /* predicate to infer types for boolean expressions */
 typeBoolExp(true).
 typeBoolExp(false). 
 typeBoolExp( X < Y) :- 
     typeExp(X, T),
     typeExp(Y, T),
-    hasComparison(T).
+    hasComparison(T),
+    !.
 typeBoolExp( X > Y) :- 
     typeExp(X, T),
     typeExp(Y, T),
-    hasComparison(T).
+    hasComparison(T),
+    !.
 typeBoolExp( X >= Y) :- 
     typeExp(X, T),
     typeExp(Y, T),
-    hasComparison(T).
-% typeBoolExp( X == Y) :- 
-%    typeExp(X, T),
-%    typeExp(Y, T),
-%    hasComparison(T).
-% typeBoolExp( X && Y) :- 
-%    typeExp(X, T),
-%    typeExp(Y, T),
-%    hasComparison(T).
-% typeBoolExp( X || Y) :- 
-%    typeExp(X, T),
-%    typeExp(Y, T),
-%   hasComparison(T).        
+    hasComparison(T),
+    !.
+typeBoolExp( X == Y) :- 
+    typeExp(X, T),
+    typeExp(Y, T),
+    hasComparison(T),
+    !.
 
 
 /* TODO: add statements types and their type checking */
@@ -108,24 +100,31 @@ typeStatement(gvLet(Name, T, Code), unit):-
     bType(T), /* make sure we have an infered type */
     asserta(gvar(Name, T)). /* add definition to database */
 
-
-% b. global function definitions (let add x y = x+y)
-% last expression is an implicit return. return statement also possible  
-% gvlet posses a name, argumentts (probably same type), a function itself (which probably has oen arguments)
-    %   where name is an atom
-    %           arguments should be string
-
-    %  typeStatement(def((v, [arg1,arg2]), T, X+Y), unit).
-
-typeStatement(def((Name, [Ar1, Ar2]), T, Code), unit):- %code is X+Y
+typeStatement(l_Let_in(Name, T, Code), unit):-
     atom(Name), /* make sure we have a bound name */
-    % typeExp(Ar2, Z),
-    % typeExp(Ar1, Ar2),
-    typeExp(Code, T),
+    typeExp(Code, T), /* infer the type of Code and ensure it is T */
     bType(T), /* make sure we have an infered type */
-    asserta(gvar(Name, T)). /* add definition to database */
+    asserta(lvar(Name, T)). /* add definition to database */
 
 
+% typeStatement(do([ gvLet(c, T, iminus(3, 2)), gvLet(v, T2, iplus(8, 4))],T1), unit).
+% typeStatement(do([ gvLet(c, T, iminus(3, 2)), l_Let_in(v, T2, iplus(8, 4))],T1), unit).
+% typeStatement(do([ gvLet(c, T, iminus(3, 2)), l_Let_in(v, T2, iplus(8, 4)),gvLet(k, T4, v) ],T1), unit).
+typeStatement(do(Code, T), unit) :-
+    is_list(Code), /* make sure Code is a list */ /* delete all local definitions */
+    % typeCode(Code, unit).
+    typeCode(Code, T), 
+    retractall(lvar(_, _)).
+
+% if we have a 
+typeStatement(gfunc(Name, P, T, Code), unit):-
+    atom(Name), /* make sure we have a bound name */
+    parameter(P),
+    typeExp(Code, T), /* infer the type of Code and ensure it is T */
+    bType(T), /* make sure we have an infered type */
+    asserta(gvar(Name, P)). /* add definition to database */
+    %  
+    
 
 /* if statements are encodes as:
     if(condition:Boolean, trueCode: [Statements], falseCode: [Statements])
@@ -135,29 +134,47 @@ typeStatement(if(Cond, TrueB, FalseB), T) :-
     typeCode(TrueB, T),
     typeCode(FalseB, T).
 
-/* for statements are encodes as:
-    for(variable: int, condition:Boolean, expression:variable:int -> variable:int, [Statments])
-    https://discretemathisfun.wordpress.com/2009/12/07/looping-using-prolog/
-*/
-% typeStatement(for(Name, Type, V, Cond, Exp, Statements ), T) :-
-%     typeStatement(gvLet(Name, Type, Code)),
-%     typeBoolExp(Cond),
-%     typeCode(Exp),
-%     typeCode(Statemetns, T).
+/*for i = 1 to n_jobs () do
+  do_next_job ()
+done*/
+
+% typeStatement(for(l_Let_in(name,T,Code), l_Let_in(name, T,Code),A), unit).
+typeStatement(for(gvLet(Name, T, Code), gvLet(Name2, T2, Code2), Code3), unit) :-
+    atom(Name),
+    typeExp(Code, T),
+    bType(T),
+    asserta(gvar(Name, T)),
+    atom(Name2),
+    typeExp(Code2, T2),
+    bType(T2),
+    asserta(gvar(Name2, T2)),
+    typeExp(Code2, T2),
+    deleteGVars().
+    % typeStatement(X, T),
+    % typeStatement(Y, T),
+    % % lvar(X,T),
+    % % lvar(Y,T),
+    % typeStatement(do(A,T)),
+    % deleteLVars().
 
 
-/* Switch statements are encodes as:
-    Switch(choice:[case])
-    OR
-    Switch(choice, case1, case2, case 3)
+%  typeStatement(gvLet(a, S, 2.1+2.1), where(l_Let_in(a2, S1, 2+2)), unit).
+%  typeStatement(gvLet(a, S, 2.1+2.1), where(l_Let_in(a3, S1, 2+2)), unit).
+%  let c = a where a =5.
+typeStatement(X, where(Y), unit) :-
+    typeStatement(X, T2),
+    typeStatement(Y, T3),
+    deleteLVars().
 
-    Choice is option looking for
-    case=> two parts, 
-*/
-% typeStatement(switch(Choice, X), T) :-
-%     hasComparison(Choice),
-%     integer(X).
+% extrarule0(Name, P):-
+%     extrarule(Name, P),
+%     retractall(gvar(_, _)).
 
+% extrarule(Name, P):-
+%     atom(Name),
+%     atom(P),
+%     asserta(gvar(Name,P)).
+    % format('here is the list ~w ', [P]).
 
 
 
@@ -180,9 +197,8 @@ infer(Code, T) :-
  */
 bType(int).
 bType(float).
-bType(string).
+% bType(string).
 bType(bool).
-bType(real).
 bType(unit). /* unit type for things that are not expressions */
 /*  functions type.
     The type is a list, the last element is the return type
@@ -209,6 +225,7 @@ bType([H|T]):- bType(H), bType(T).
 */
 
 deleteGVars():-retractall(gvar), asserta(gvar(_X,_Y):-false()).
+deleteLVars():-retractall(lvar(_, _)), asserta(lar(_X,_Y):-false()).
 
 /*  builtin functions
     Each definition specifies the name and the 
@@ -222,35 +239,28 @@ deleteGVars():-retractall(gvar), asserta(gvar(_X,_Y):-false()).
 iplus :: int -> int -> int
 
 */
+
+
 fType((+), [T, T, T]) :- hasAdd(T).
-
-
-
 fType((-), [T, T, T]) :- hasAdd(T).
 fType((*), [T, T, T]) :- hasAdd(T).
 fType((\/), [T, T, T]) :- hasAdd(T).
 
 fType(iplus, [int,int,int]).
 fType(fplus, [float, float, float]).
-
 fType(iminus, [int,int,int]).
 fType(fminus, [float, float, float]).
 fType(fmultiply, [float,float,float]).
 fType(fdivide, [float,float,float]).
-
-
-
-
-fType(fToInt, [float,int]).
-fType(iToFloat, [int,float]).
-fType(print, [_X, unit]). /* simple print */ %????
-
 
 fType(cos, [T,T]) :- hasfloat(T).
 % ftype cos has a list T where T is float
 fType(sin, [T,T]) :- hasfloat(T).
 fType(sqrt, [T,T]) :- hasfloat(T).
 
+fType(fToInt, [float,int]).
+fType(iToFloat, [int,float]).
+fType(print, [_X, unit]). /* simple print */
 
 /* Find function signature
    A function is either buld in using fType or
@@ -262,9 +272,15 @@ functionType(Name, Args):-
     gvar(Name, Args),
     is_list(Args). % make sure we have a function not a simple variable
 
+% insecure
+functionType(Name, Args):-
+    lvar(Name, Args),
+    is_list(Args).
+
 % Check first built in functions
 functionType(Name, Args) :-
     fType(Name, Args), !. % make deterministic
 
 % This gets wiped out but we have it here to make the linter happy
 gvar(_, _) :- false().
+lvar(_, _) :- false().
