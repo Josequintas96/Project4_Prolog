@@ -1,3 +1,19 @@
+Project 4
+ProLog Type Inference
+Team Members: Peyton Marinelli and Jose Quintas
+
+How we run test file:
+1.   [typeInf].
+2.   consult("typeInf.plt"), run_tests().
+
+
+There are 47 Tests covereing everything we did in typeInf.pl
+
+
+
+
+
+
 Introduction
 ============
 

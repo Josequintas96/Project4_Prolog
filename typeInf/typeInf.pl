@@ -1,6 +1,3 @@
-% typeStatement(gvLet(atom, T, iplus(X,T)), unit).
-%  typeStatement(gvLet(atom, T, 2.1+2.1), unit).
-% typeStatement(gvLet(atom, T, 2+2), unit).
 
 :- dynamic gvar/2.
 :- dynamic lvar/2.
@@ -111,8 +108,7 @@ typeStatement(l_Let_in(Name, T, Code), unit):-
 % typeStatement(do([ gvLet(c, T, iminus(3, 2)), l_Let_in(v, T2, iplus(8, 4))],T1), unit).
 % typeStatement(do([ gvLet(c, T, iminus(3, 2)), l_Let_in(v, T2, iplus(8, 4)),gvLet(k, T4, v) ],T1), unit).
 typeStatement(do(Code, T), unit) :-
-    is_list(Code), /* make sure Code is a list */ /* delete all local definitions */
-    % typeCode(Code, unit).
+    is_list(Code), 
     typeCode(Code, T), 
     retractall(lvar(_, _)).
 
@@ -120,9 +116,9 @@ typeStatement(do(Code, T), unit) :-
 typeStatement(gfunc(Name, P, T, Code), unit):-
     atom(Name), /* make sure we have a bound name */
     parameter(P),
-    typeExp(Code, T), /* infer the type of Code and ensure it is T */
-    bType(T), /* make sure we have an infered type */
-    asserta(gvar(Name, P)). /* add definition to database */
+    typeExp(Code, T), 
+    bType(T), 
+    asserta(gvar(Name, P)). 
     %  
     
 
@@ -134,29 +130,6 @@ typeStatement(if(Cond, TrueB, FalseB), T) :-
     typeCode(TrueB, T),
     typeCode(FalseB, T).
 
-/*for i = 1 to n_jobs () do
-  do_next_job ()
-done*/
-
-% typeStatement(for(l_Let_in(name,T,Code), l_Let_in(name, T,Code),A), unit).
-typeStatement(for(gvLet(Name, T, Code), gvLet(Name2, T2, Code2), Code3), unit) :-
-    atom(Name),
-    typeExp(Code, T),
-    bType(T),
-    asserta(gvar(Name, T)),
-    atom(Name2),
-    typeExp(Code2, T2),
-    bType(T2),
-    asserta(gvar(Name2, T2)),
-    typeExp(Code2, T2),
-    deleteGVars().
-    % typeStatement(X, T),
-    % typeStatement(Y, T),
-    % % lvar(X,T),
-    % % lvar(Y,T),
-    % typeStatement(do(A,T)),
-    % deleteLVars().
-
 
 %  typeStatement(gvLet(a, S, 2.1+2.1), where(l_Let_in(a2, S1, 2+2)), unit).
 %  typeStatement(gvLet(a, S, 2.1+2.1), where(l_Let_in(a3, S1, 2+2)), unit).
@@ -165,16 +138,6 @@ typeStatement(X, where(Y), unit) :-
     typeStatement(X, T2),
     typeStatement(Y, T3),
     deleteLVars().
-
-% extrarule0(Name, P):-
-%     extrarule(Name, P),
-%     retractall(gvar(_, _)).
-
-% extrarule(Name, P):-
-%     atom(Name),
-%     atom(P),
-%     asserta(gvar(Name,P)).
-    % format('here is the list ~w ', [P]).
 
 
 

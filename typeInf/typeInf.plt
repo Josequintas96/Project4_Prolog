@@ -145,9 +145,9 @@ test(typeStatement_variable, [nondet, true(T2 == float)]) :-
     typeStatement(gvLet(v, T2, v0), unit),
     gvar(v, float). 
     
-test(typeStatement_variable, [nondet, true(T2 == float)]) :- 
+test(typeStatement_variable, [nondet, true(T == int)]) :- 
     deleteGVars(), 
-    typeStatement(gfunc(name, [x, y, z], T, 2+2), unit).,
+    typeStatement(gfunc(name, [x, y, z], T, 2+2), unit),
     gvar(name,[x, y, z]). 
 
 % same test as above but with infer 
@@ -162,7 +162,6 @@ test(mockedFct, [nondet]) :-
     asserta(gvar(my_fct, [int, float])), % add my_fct(int)-> float to the gloval variables
     typeExp(my_fct(X), T), % infer type of expression using or function
     assertion(X==int), assertion(T==float). % make sure the types infered are correct
-
 
 
 % typeStatement([(gvLet(a0, T, a1),unit)],where([(l_Let_in(a0, T, 2+2),unit)]), unit).
@@ -209,8 +208,12 @@ test(global_do, [nondet]) :-
     assertion(T1==unit), assertion(T2 == int), assertion(T == int).
 
 test(extend_do, [nondet]) :-
-    typeCode([ gvLet(c, T, fminus(3.1, 2.1)), (2+2), gvLet(c, T2, iminus(3, 9990)), (2<2)], T3),
-    assertion(T3==bool),assertion(T==float), assertion(T2==int).
+    typeStatement(do([ gvLet(c, T, iminus(3, 2)), l_Let_in(v, T2, iplus(8, 4))],T1), unit),
+    assertion(T1==unit),assertion(T==int), assertion(T2==int).
+
+test(extend_do, [nondet]) :-
+    typeStatement(do([ gvLet(c, T, iminus(3, 2)), l_Let_in(v, T2, iplus(8, 4))],T1), unit),
+    assertion(T1==unit),assertion(T==int), assertion(T2==int).
 
 test(simple_CODE, [nondet]) :-
     typeCode([ gvLet(c, T, fminus(3.1, 2.1)), (2+2)], T3),
@@ -247,5 +250,13 @@ test(ifStat, [nondet]) :-
         if(>(float,float), [iplus(int,int)], [iminus(int,int)])
         ], Ret),
         assertion(Ret==int).
+
+test(passing_variables, [nondet]) :-
+    infer([
+        (gvLet(var1, T, 5.6)), (gvLet(var2, T2, var1)), (gvLet(var3, T3, var1*var2))
+        ], Ret),
+        assertion(Ret==unit), assertion(T==T2).
+
+
 
 :-end_tests(typeInf).
